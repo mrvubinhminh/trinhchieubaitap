@@ -30,7 +30,7 @@
   }
   button{font-family:inherit;}
   [hidden]{display:none !important;}
-  img{max-width:100%;}       
+  img{max-width:100%;}
 
   /* ---------- generic buttons ---------- */
   .btn{border:none;border-radius:999px;padding:9px 18px;font-weight:700;font-size:.92rem;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;}
@@ -470,8 +470,7 @@
     // Nếu để mảng trống [], hệ thống sẽ cho phép TẤT CẢ mọi người đăng nhập.
     const ALLOWED_EMAILS = [
       "vutluc@gmail.com",
-      "vutienlucnhc@gmail.com",
-      "vutienlucnhc5@gmail.com"
+      "vutienlucnhc@gmail.com"
     ];
 
     // Theo dõi trạng thái đăng nhập
@@ -545,15 +544,15 @@
   </div>
   <div class="setup-wrap">
     <div class="setup-header">
-      <h1>🎓 Trình chiếu Bài tập Toán</h1>
-      <p>Nhập câu hỏi cho 3 dạng bài (Trắc nghiệm · Đúng-Sai · Trả lời ngắn) để tạo bài trình chiếu tương tác — hiển thị sắc nét cho máy chiếu và điện thoại.</p>
+      <h1 style="background: -webkit-linear-gradient(45deg, #2f80ed, #56ccf2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 2.2rem;">✨ Hệ thống Trình chiếu Chuyên nghiệp</h1>
+      <p style="font-size: 1.05rem; margin-top: 8px;">Soạn thảo, quản lý và trình chiếu bài tập tương tác với độ sắc nét tuyệt đối.</p>
     </div>
 
-    <div class="global-card auto-upload-card" id="autoUploadZone">
-      <div class="auto-upload-icon">🧠📂</div>
+    <div class="global-card auto-upload-card" id="autoUploadZone" style="padding: 40px 20px; border-radius: 20px;">
+      <div class="auto-upload-icon" style="font-size: 3rem; margin-bottom: 10px;">📥</div>
       <div class="auto-upload-text">
-        <b>Tải file Excel — tự động nhận diện loại câu hỏi</b>
-        <div class="hint">Kéo-thả hoặc bấm để chọn một hoặc nhiều file .xlsx (đọc tất cả các sheet). Hỗ trợ <b>file chuẩn dạng ngân hàng câu hỏi</b> — một bảng gộp chung với cột <b>"Loại"</b> (Trắc nghiệm / Đúng-Sai / Trả lời ngắn) tự phân loại từng dòng — hoặc file chia riêng theo từng phần. Không cần chọn thủ công.</div>
+        <b style="font-size: 1.2rem;">Kéo thả file Excel vào đây để tự động nhận diện</b>
+        <div class="hint" style="margin-top: 8px;">Hỗ trợ ngân hàng câu hỏi chuẩn hoặc file chi tiết từng phần. Không cần thao tác thủ công.</div>
       </div>
       <button class="btn btn-primary" id="btnAutoUpload" type="button">📂 Chọn file...</button>
       <button class="btn btn-outline" id="btnUnifiedTemplate" type="button">⬇ Tải file mẫu chuẩn (gộp 3 loại)</button>
@@ -600,16 +599,14 @@
         </div>
         <span class="badge-count" id="countI">0 câu</span>
       </div>
-      <div class="part-desc">Cột dữ liệu: <b>Nội dung, A, B, C, D, Kí hiệu Đ/A (1-4 hoặc A-D), Lời giải, Link ảnh</b> (Link ảnh không bắt buộc).</div>
-      <div class="part-actions">
-        <button class="btn btn-outline btn-sm" data-action="upload" data-part="I">📂 Tải thủ công vào Phần I</button>
+      <div class="part-actions" style="margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="I">📂 Upload file Excel</button>
         <input type="file" class="file-input" data-part="I" accept=".xlsx,.xls">
         <button class="btn btn-outline btn-sm" data-action="template" data-part="I">⬇ Tải file mẫu</button>
-        <button class="btn btn-red btn-sm" data-action="clear" data-part="I">Xoá dữ liệu phần này</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="I">Xoá dữ liệu</button>
       </div>
-      <textarea class="paste-area" data-part="I" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel (Ctrl+C rồi Ctrl+V) vào đây, dòng đầu là tiêu đề cột..."></textarea>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="I">✅ Nhập dữ liệu vừa dán</button>
-      <div class="hint">Mẹo: mở file Excel, bôi đen toàn bộ vùng dữ liệu (kể cả dòng tiêu đề), Ctrl+C rồi dán vào ô trên.</div>
+      <textarea class="paste-area" data-part="I" style="display:none;"></textarea>
+      <button class="btn btn-ghost btn-sm" style="display:none;" data-action="ingestPaste" data-part="I">✅ Nhập dữ liệu vừa dán</button>
       <div class="preview-wrap" id="previewI"></div>
     </div>
 
@@ -622,16 +619,14 @@
         </div>
         <span class="badge-count" id="countII">0 câu</span>
       </div>
-      <div class="part-desc">Cột dữ liệu: <b>Nội dung, a, b, c, d, Đáp án a, Đáp án b, Đáp án c, Đáp án d (ghi Đ hoặc S), Lời giải</b>.</div>
-      <div class="part-actions">
-        <button class="btn btn-outline btn-sm" data-action="upload" data-part="II">📂 Tải thủ công vào Phần II</button>
+      <div class="part-actions" style="margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="II">📂 Upload file Excel</button>
         <input type="file" class="file-input" data-part="II" accept=".xlsx,.xls">
         <button class="btn btn-outline btn-sm" data-action="template" data-part="II">⬇ Tải file mẫu</button>
-        <button class="btn btn-red btn-sm" data-action="clear" data-part="II">Xoá dữ liệu phần này</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="II">Xoá dữ liệu</button>
       </div>
-      <textarea class="paste-area" data-part="II" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel vào đây..."></textarea>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="II">✅ Nhập dữ liệu vừa dán</button>
-      <div class="hint">Mẹo: mở file Excel, bôi đen toàn bộ vùng dữ liệu (kể cả dòng tiêu đề), Ctrl+C rồi dán vào ô trên.</div>
+      <textarea class="paste-area" data-part="II" style="display:none;"></textarea>
+      <button class="btn btn-ghost btn-sm" style="display:none;" data-action="ingestPaste" data-part="II">✅ Nhập dữ liệu vừa dán</button>
       <div class="preview-wrap" id="previewII"></div>
     </div>
 
@@ -644,16 +639,14 @@
         </div>
         <span class="badge-count" id="countIII">0 câu</span>
       </div>
-      <div class="part-desc">Cột dữ liệu: <b>Nội dung, Đáp án, Lời giải</b>.</div>
-      <div class="part-actions">
-        <button class="btn btn-outline btn-sm" data-action="upload" data-part="III">📂 Tải thủ công vào Phần III</button>
+      <div class="part-actions" style="margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="III">📂 Upload file Excel</button>
         <input type="file" class="file-input" data-part="III" accept=".xlsx,.xls">
         <button class="btn btn-outline btn-sm" data-action="template" data-part="III">⬇ Tải file mẫu</button>
-        <button class="btn btn-red btn-sm" data-action="clear" data-part="III">Xoá dữ liệu phần này</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="III">Xoá dữ liệu</button>
       </div>
-      <textarea class="paste-area" data-part="III" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel vào đây..."></textarea>
-      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="III">✅ Nhập dữ liệu vừa dán</button>
-      <div class="hint">Đáp án Phần III là một chuỗi ký tự (số, dấu trừ, dấu phẩy...), ví dụ: <code>-12,5</code>.</div>
+      <textarea class="paste-area" data-part="III" style="display:none;"></textarea>
+      <button class="btn btn-ghost btn-sm" style="display:none;" data-action="ingestPaste" data-part="III">✅ Nhập dữ liệu vừa dán</button>
       <div class="preview-wrap" id="previewIII"></div>
     </div>
   </div>
