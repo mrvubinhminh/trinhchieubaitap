@@ -717,6 +717,8 @@
       <button class="color-dot sel" id="colorRed" style="background:#eb5757" title="Màu đỏ"></button>
       <button class="color-dot" id="colorBlue" style="background:#2f80ed" title="Màu xanh dương"></button>
       <button class="color-dot" id="colorGreen" style="background:#27ae60" title="Màu xanh lá"></button>
+      <button class="color-dot" id="colorYellow" style="background:#f2c94c" title="Màu vàng"></button>
+      <button class="color-dot" id="colorWhite" style="background:#ffffff" title="Màu trắng"></button>
       <button class="icon-btn" id="toolClear" title="Xoá hết nét vẽ">🗑️</button>
       <div class="sep"></div>
       <div class="jump-wrap" style="position:relative;">
@@ -2589,6 +2591,8 @@ function initPresentScreen(){
   document.getElementById('colorRed').addEventListener('click', ()=>setColor('#eb5757','colorRed'));
   document.getElementById('colorBlue').addEventListener('click', ()=>setColor('#2f80ed','colorBlue'));
   document.getElementById('colorGreen').addEventListener('click', ()=>setColor('#27ae60','colorGreen'));
+  document.getElementById('colorYellow').addEventListener('click', ()=>setColor('#f2c94c','colorYellow'));
+  document.getElementById('colorWhite').addEventListener('click', ()=>setColor('#ffffff','colorWhite'));
   document.getElementById('toolClear').addEventListener('click', clearCanvas);
   document.getElementById('btnClock').addEventListener('click', (e)=>{ e.stopPropagation(); openTimerPopover(); });
   document.getElementById('timerBtn').addEventListener('click', timerToggle);
