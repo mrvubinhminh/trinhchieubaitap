@@ -418,6 +418,17 @@
     background: #f8f9fa;
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   }
+  /* ---- summary screen ---- */
+  #summaryScreen{position:fixed;inset:0;z-index:45;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);color:#fff;}
+  .summary-content{position:relative;z-index:2;text-align:center;animation:summaryPop 0.8s cubic-bezier(0.34,1.56,0.64,1);}
+  @keyframes summaryPop{0%{transform:scale(0.8);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .summary-trophy{font-size:6rem;margin-bottom:10px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.6));}
+  .summary-title{font-size:3rem;font-weight:800;margin:0 0 10px;text-shadow:0 4px 10px rgba(0,0,0,0.5);}
+  .summary-subtitle{font-size:1.4rem;font-weight:600;color:#cbd5e1;margin-bottom:40px;}
+  .summary-btn{background:linear-gradient(135deg,#4facfe,#00f2fe);color:#fff;border:none;padding:16px 40px;border-radius:999px;font-weight:800;font-size:1.2rem;cursor:pointer;box-shadow:0 10px 20px rgba(0,242,254,0.3);transition:transform 0.15s;}
+  .summary-btn:hover{transform:translateY(-3px) scale(1.05);}
+  .confetti{position:absolute;width:10px;height:10px;background-color:#f2d74e;opacity:0;}
+  @keyframes fall{0%{top:-10%;opacity:1;transform:rotate(0deg);}100%{top:110%;opacity:1;transform:rotate(720deg);}}
 </style>
 
 <!-- Firebase SDK -->
@@ -754,6 +765,16 @@
       <div class="cover-quote-author" id="coverQuoteAuthor"></div>
     </div>
     <button class="cover-start-btn" id="btnCoverStart">🚀 Bắt đầu</button>
+  </div>
+</div>
+
+<!-- ============= SUMMARY SCREEN ============= -->
+<div id="summaryScreen" hidden>
+  <div class="summary-content">
+    <div class="summary-trophy">🏆</div>
+    <h1 class="summary-title">Tuyệt vời!</h1>
+    <div class="summary-subtitle" id="summarySubtitle">Đã hoàn thành bài ôn tập</div>
+    <button class="summary-btn" id="btnSummaryFinish">Hoàn tất & Trở về</button>
   </div>
 </div>
 
@@ -1473,11 +1494,34 @@ function exitCoverToSetup(){
   document.getElementById('setupScreen').hidden = false;
 }
 
+function createConfetti() {
+  const colors = ['#f2d74e', '#95c3de', '#ff9a91', '#f29cb1', '#93b8c0', '#ffd166', '#0ea5e9'];
+  const container = document.getElementById('summaryScreen');
+  document.querySelectorAll('.confetti').forEach(el => el.remove());
+  for (let i = 0; i < 80; i++) {
+    const conf = document.createElement('div');
+    conf.classList.add('confetti');
+    conf.style.left = Math.random() * 100 + 'vw';
+    conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.animation = `fall ${Math.random() * 3 + 2}s linear forwards`;
+    conf.style.animationDelay = Math.random() * 2 + 's';
+    container.appendChild(conf);
+  }
+}
+
+function returnToSetupFromSummary(){
+  document.getElementById('summaryScreen').hidden = true;
+  document.getElementById('setupScreen').hidden = false;
+  document.querySelectorAll('.confetti').forEach(el => el.remove());
+}
+
 function exitPresentation(){
   stopTimer();
   closeSolution();
   document.getElementById('presentScreen').hidden = true;
-  document.getElementById('setupScreen').hidden = false;
+  document.getElementById('summarySubtitle').textContent = 'Đã hoàn thành: ' + (deck.title || 'Bài ôn tập');
+  document.getElementById('summaryScreen').hidden = false;
+  createConfetti();
   playSound('lessonSummary');
 }
 
@@ -2372,6 +2416,7 @@ function initPresentScreen(){
 
   document.getElementById('btnCoverStart').addEventListener('click', enterSlidesFromCover);
   document.getElementById('coverBack').addEventListener('click', exitCoverToSetup);
+  document.getElementById('btnSummaryFinish').addEventListener('click', returnToSetupFromSummary);
 
   document.getElementById('slideContent').style.setProperty('--scale', scale);
 }
