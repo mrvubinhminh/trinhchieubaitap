@@ -469,6 +469,7 @@
     const db = getFirestore(app);
     window.firebaseDb = db;
     window.firebaseAuth = auth;
+    window.firebaseFirestore = { addDoc, collection, serverTimestamp, getDocs, query, where, doc, deleteDoc };
     const provider = new GoogleAuthProvider();
 
     // Export ra global để có thể gọi từ các nút bấm HTML
@@ -858,7 +859,7 @@ window.saveDeckToCloud = async function() {
   btn.disabled = true;
 
   try {
-    const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js");
+    const { addDoc, collection, serverTimestamp } = window.firebaseFirestore;
     
     // Thu thập metadata
     const meta = {
@@ -902,7 +903,7 @@ window.openCloudModal = async function() {
   document.getElementById('cloudBody').innerHTML = '<div class="cloud-empty">⏳ Đang tải dữ liệu...</div>';
 
   try {
-    const { getDocs, query, collection, where } = await import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js");
+    const { getDocs, query, collection, where } = window.firebaseFirestore;
     const q = query(
       collection(window.firebaseDb, "math_decks"),
       where("meta.ownerEmail", "==", window.firebaseAuth.currentUser.email)
@@ -932,7 +933,7 @@ window.closeCloudModal = function() {
 window.deleteCloudDeck = async function(id) {
   if(!confirm("Bạn có chắc muốn xóa bài này khỏi Cloud không?")) return;
   try {
-    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js");
+    const { doc, deleteDoc } = window.firebaseFirestore;
     await deleteDoc(doc(window.firebaseDb, "math_decks", id));
     window.openCloudModal(); // Tải lại danh sách
   } catch (err) {
