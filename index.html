@@ -875,9 +875,9 @@ window.saveDeckToCloud = async function() {
     const deckData = {
       meta,
       settings: { defaultTimer: document.getElementById('defaultTimer').value },
-      I: state.I,
-      II: state.II,
-      III: state.III
+      I: deck.parts.I,
+      II: deck.parts.II,
+      III: deck.parts.III
     };
 
     await addDoc(collection(window.firebaseDb, "math_decks"), deckData);
@@ -951,9 +951,9 @@ window.loadDeckFromCloud = function(id) {
   document.getElementById('deckTitle').value = deck.meta.title || '';
   document.getElementById('defaultTimer').value = deck.settings?.defaultTimer || '60';
 
-  state.I = deck.I || [];
-  state.II = deck.II || [];
-  state.III = deck.III || [];
+  deck.parts.I = deck.I || [];
+  deck.parts.II = deck.II || [];
+  deck.parts.III = deck.III || [];
   
   updateCount('I');
   updateCount('II');
@@ -979,24 +979,24 @@ function renderCloudDecks(decks) {
     if (d.meta.createdAt && d.meta.createdAt.toDate) {
       dateStr = d.meta.createdAt.toDate().toLocaleString('vi-VN');
     }
-    return \`
+    return `
       <div class="cloud-item">
         <div class="cloud-item-info">
-          <h3>\${title}</h3>
+          <h3>${title}</h3>
           <div class="cloud-item-meta">
-            <span>\${d.meta.grade === 'Khác' ? 'Lớp Khác' : 'Lớp ' + d.meta.grade}</span>
-            \${d.meta.chapter ? \`<span>\${d.meta.chapter}</span>\` : ''}
-            \${d.meta.target ? \`<span>👤 \${d.meta.target}</span>\` : ''}
-            <span>🕒 \${dateStr}</span>
+            <span>${d.meta.grade === 'Khác' ? 'Lớp Khác' : 'Lớp ' + d.meta.grade}</span>
+            ${d.meta.chapter ? `<span>${d.meta.chapter}</span>` : ''}
+            ${d.meta.target ? `<span>👤 ${d.meta.target}</span>` : ''}
+            <span>🕒 ${dateStr}</span>
           </div>
-          \${d.meta.note ? \`<div class="cloud-item-note">\${d.meta.note}</div>\` : ''}
+          ${d.meta.note ? `<div class="cloud-item-note">${d.meta.note}</div>` : ''}
         </div>
         <div class="cloud-item-actions">
-          <button class="btn btn-primary btn-sm" onclick="window.loadDeckFromCloud('\${d.id}')">⬇ Tải xuống</button>
-          <button class="btn btn-red btn-sm" onclick="window.deleteCloudDeck('\${d.id}')">🗑 Xóa</button>
+          <button class="btn btn-primary btn-sm" onclick="window.loadDeckFromCloud('${d.id}')">⬇ Tải xuống</button>
+          <button class="btn btn-red btn-sm" onclick="window.deleteCloudDeck('${d.id}')">🗑 Xóa</button>
         </div>
       </div>
-    \`;
+    `;
   }).join('');
 }
 
