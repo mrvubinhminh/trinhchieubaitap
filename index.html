@@ -81,9 +81,19 @@
   .part-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
   .paste-area{width:100%;min-height:80px;border-radius:12px;border:1.5px solid var(--border);padding:10px 12px;font-family:'SFMono-Regular',Consolas,monospace;font-size:.78rem;resize:vertical;}
   .hint{font-size:.76rem;color:#8b95ab;margin-top:6px;line-height:1.5;}
-  .preview-wrap{overflow-x:auto;margin-top:12px;}
+  .preview-wrap{overflow-x:auto;overflow-y:auto;max-height:400px;margin-top:12px;border:1px solid var(--border);border-radius:8px;}
   table.preview-table{width:100%;border-collapse:collapse;font-size:.78rem;}
   table.preview-table th,table.preview-table td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:left;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  table.preview-table tr.invalid-latex{background-color:#ffebeb;}
+  .action-btns{display:flex;gap:4px;}
+  .btn-icon-small{background:#f1f4fa;border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;color:#38507a;font-size:0.8rem;display:flex;align-items:center;justify-content:center;}
+  .btn-icon-small:hover{background:#e2e8f0;}
+  .btn-icon-small.delete:hover{background:#ffc2c2;color:#d32f2f;}
+  #editModal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .edit-card{background:#fff;border-radius:20px;width:100%;max-width:600px;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,0.2);}
+  .edit-card h3{margin:0 0 16px;font-size:1.2rem;color:var(--blue1);}
+  .edit-card textarea{width:100%;min-height:150px;padding:12px;border:1px solid var(--border);border-radius:8px;font-size:1rem;margin-bottom:16px;resize:vertical;line-height:1.4;}
+  .edit-actions{display:flex;justify-content:flex-end;gap:12px;}
   table.preview-table th{color:var(--ink-soft);font-weight:700;background:#f7f9fc;}
   input[type=file]{display:none;}
 
@@ -560,6 +570,7 @@
     </span>
     <button class="btn btn-primary btn-sm" onclick="window.saveDeckToCloud()">☁️ Lưu bài lên Cloud</button>
     <button class="btn btn-outline btn-sm" onclick="window.openCloudModal()">📂 Mở bài đã lưu</button>
+    <button class="btn btn-outline btn-sm" onclick="window.exportToExcel()">📥 Tải bài về máy (Excel)</button>
     <button class="btn btn-outline btn-sm" onclick="window.signOutFirebase()">🚪 Đăng xuất</button>
     <a class="btn btn-outline btn-sm" href="https://chuyendoijson.vercel.app/" target="_blank" rel="noopener" title="Công cụ chuyển đổi JSON">🔄 Công cụ chuyển đổi JSON</a>
     <button class="btn btn-red btn-sm" id="btnClearAll">🗑 Xóa toàn bộ dữ liệu đã lưu</button>
@@ -838,6 +849,18 @@
     </div>
     <div class="cloud-body" id="cloudBody">
       <!-- items injected here -->
+    </div>
+  </div>
+</div>
+
+<!-- ============= EDIT MODAL ============= -->
+<div id="editModal" hidden>
+  <div class="edit-card">
+    <h3>Sửa nội dung câu hỏi</h3>
+    <textarea id="editQuestionStem"></textarea>
+    <div class="edit-actions">
+      <button class="btn btn-outline" onclick="window.closeEditModal()">Hủy</button>
+      <button class="btn btn-primary" onclick="window.saveEditQuestion()">Lưu thay đổi</button>
     </div>
   </div>
 </div>
@@ -1537,27 +1560,122 @@ function downloadUnifiedTemplate(){
 function updatePreview(partKey){
   const list = deck.parts[partKey];
   document.getElementById('count'+partKey).textContent = list.length + ' câu';
+function validateLatex(text) {
+  if (!text) return true;
+  let count = 0;
+  for(let i = 0; i < text.length; i++) {
+    if (text[i] === '$') {
+      if (i > 0 && text[i-1] === '\\') continue; // escaped
+      count++;
+    }
+  }
+  return count % 2 === 0;
+}
+
+window.deleteQuestion = function(partKey, index) {
+  if(!confirm('Bạn có chắc muốn xóa câu này?')) return;
+  deck.parts[partKey].splice(index, 1);
+  updateCount(partKey);
+  renderPreview(partKey);
+  updateTotal();
+};
+
+let currentEditPart = null;
+let currentEditIndex = -1;
+
+window.openEditModal = function(partKey, index) {
+  currentEditPart = partKey;
+  currentEditIndex = index;
+  const q = deck.parts[partKey][index];
+  document.getElementById('editQuestionStem').value = q.stem || '';
+  document.getElementById('editModal').hidden = false;
+};
+
+window.closeEditModal = function() {
+  document.getElementById('editModal').hidden = true;
+};
+
+window.saveEditQuestion = function() {
+  if(currentEditPart && currentEditIndex >= 0) {
+    const newStem = document.getElementById('editQuestionStem').value;
+    deck.parts[currentEditPart][currentEditIndex].stem = newStem;
+    renderPreview(currentEditPart);
+  }
+  window.closeEditModal();
+};
+
+window.exportToExcel = function() {
+  if (typeof XLSX === 'undefined') {
+    alert("Thư viện Excel chưa được tải xong, vui lòng thử lại sau.");
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  
+  const formatSheet = (list, partKey) => {
+    return list.map((q, i) => {
+      const row = { 'STT': i + 1, 'Nội dung': q.stem || '' };
+      if (partKey === 'I') {
+        row['Đáp án đúng'] = q.correctIndex >= 0 ? ['A','B','C','D'][q.correctIndex] : '';
+      } else if (partKey === 'II') {
+        const marks = q.items ? q.items.map(it => it.correct === true ? 'Đ' : (it.correct === false ? 'S' : '')) : [];
+        row['a'] = marks[0] || '';
+        row['b'] = marks[1] || '';
+        row['c'] = marks[2] || '';
+        row['d'] = marks[3] || '';
+      } else {
+        row['Đáp án'] = q.answer || '';
+      }
+      return row;
+    });
+  };
+
+  if(deck.parts.I.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(formatSheet(deck.parts.I, 'I')), "Phần I");
+  if(deck.parts.II.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(formatSheet(deck.parts.II, 'II')), "Phần II");
+  if(deck.parts.III.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(formatSheet(deck.parts.III, 'III')), "Phần III");
+  
+  if (!wb.SheetNames.length) {
+    alert("Chưa có dữ liệu nào để xuất!");
+    return;
+  }
+  XLSX.writeFile(wb, (deck.title || "Bai_Tap_Toan") + ".xlsx");
+};
+
+function renderPreview(partKey){
+  const list = deck.parts[partKey];
   const wrap = document.getElementById('preview'+partKey);
   if(list.length===0){ wrap.innerHTML=''; return; }
   let cols;
-  if(partKey==='I') cols=['#','Nội dung','Đáp án đúng'];
-  else if(partKey==='II') cols=['#','Nội dung','a','b','c','d'];
-  else cols=['#','Nội dung','Đáp án'];
+  if(partKey==='I') cols=['#','Nội dung','Đáp án đúng','Thao tác'];
+  else if(partKey==='II') cols=['#','Nội dung','a','b','c','d','Thao tác'];
+  else cols=['#','Nội dung','Đáp án','Thao tác'];
+  
   let html = '<table class="preview-table"><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';
-  list.slice(0,5).forEach((q,i)=>{
-    const stemShort = (q.stem||'').replace(/\s+/g,' ').slice(0,60);
+  list.forEach((q,i)=>{
+    const isValid = validateLatex(q.stem);
+    const rowClass = isValid ? '' : ' class="invalid-latex" title="Lỗi: Số lượng dấu $ không chẵn"';
+    const stemShort = (q.stem||'').replace(/\s+/g,' ').slice(0,80) + ((q.stem||'').length > 80 ? '...' : '');
+    
+    let tds = '<td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td>';
+    
     if(partKey==='I'){
       const ansTxt = q.correctIndex>=0 ? ['A','B','C','D'][q.correctIndex] : '?';
-      html += '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td><td>'+ansTxt+'</td></tr>';
+      tds += '<td>'+ansTxt+'</td>';
     }else if(partKey==='II'){
       const marks = q.items.map(it=> it.correct===true?'Đ':(it.correct===false?'S':'?'));
-      html += '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td><td>'+marks[0]+'</td><td>'+marks[1]+'</td><td>'+marks[2]+'</td><td>'+marks[3]+'</td></tr>';
+      tds += '<td>'+marks[0]+'</td><td>'+marks[1]+'</td><td>'+marks[2]+'</td><td>'+marks[3]+'</td>';
     }else{
-      html += '<tr><td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td><td>'+escapeHtml(q.answer||'')+'</td></tr>';
+      tds += '<td>'+escapeHtml(q.answer||'')+'</td>';
     }
+    
+    const actions = `<div class="action-btns">
+      <button class="btn-icon-small" onclick="window.openEditModal('${partKey}', ${i})" title="Sửa">✏️</button>
+      <button class="btn-icon-small delete" onclick="window.deleteQuestion('${partKey}', ${i})" title="Xoá">🗑</button>
+    </div>`;
+    tds += '<td>'+actions+'</td>';
+    
+    html += '<tr'+rowClass+'>'+tds+'</tr>';
   });
   html += '</tbody></table>';
-  if(list.length>5) html += '<div class="hint">... và '+(list.length-5)+' câu khác</div>';
   wrap.innerHTML = html;
 }
 function escapeHtml(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
