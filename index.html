@@ -845,23 +845,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
 <script>
 (function(){
 "use strict";
 
-window.saveDeckToCloud = async function() {
+window.saveDeckToCloud = function() {
   if (!window.firebaseDb || !window.firebaseAuth.currentUser) {
     alert("Vui lòng đăng nhập trước!");
     return;
   }
   const btn = event.target;
-  btn.textContent = "⏳ Đang lưu...";
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "⏳ Đang nén...";
   btn.disabled = true;
 
   try {
     const { addDoc, collection, serverTimestamp } = window.firebaseFirestore;
     
-    // Thu thập metadata
     const meta = {
       grade: document.getElementById('deckGrade').value,
       chapter: document.getElementById('deckChapter').value,
@@ -874,22 +875,45 @@ window.saveDeckToCloud = async function() {
       ownerEmail: window.firebaseAuth.currentUser.email
     };
 
-    // Chuẩn bị dữ liệu deck
+    const rawParts = { I: deck.parts.I, II: deck.parts.II, III: deck.parts.III };
+    const compressedParts = window.LZString ? window.LZString.compressToUTF16(JSON.stringify(rawParts)) : null;
+
     const deckData = {
       meta,
-      settings: { defaultTimer: document.getElementById('defaultTimer').value },
-      I: deck.parts.I,
-      II: deck.parts.II,
-      III: deck.parts.III
+      settings: { defaultTimer: document.getElementById('defaultTimer').value }
     };
+    
+    if (compressedParts) {
+       deckData.compressedParts = compressedParts;
+    } else {
+       deckData.I = deck.parts.I;
+       deckData.II = deck.parts.II;
+       deckData.III = deck.parts.III;
+    }
 
-    await addDoc(collection(window.firebaseDb, "math_decks"), deckData);
-    alert("✅ Đã lưu bài lên Cloud thành công!");
+    btn.innerHTML = "☁️ Đang lưu ngầm...";
+    
+    addDoc(collection(window.firebaseDb, "math_decks"), deckData)
+      .then(() => {
+         console.log("Đã lưu bài lên Cloud thành công!");
+      })
+      .catch(error => {
+         console.error("Lỗi khi lưu ngầm:", error);
+         alert("❌ Lỗi khi lưu ngầm: " + error.message);
+      });
+
+    setTimeout(() => {
+      btn.innerHTML = "✅ Đã lưu";
+      setTimeout(() => {
+         btn.innerHTML = originalText;
+         btn.disabled = false;
+      }, 2000);
+    }, 500);
+
   } catch (error) {
     console.error(error);
-    alert("❌ Lỗi khi lưu: " + error.message);
-  } finally {
-    btn.textContent = "☁️ Lưu bài lên Cloud";
+    alert("❌ Lỗi khi xử lý lưu: " + error.message);
+    btn.innerHTML = originalText;
     btn.disabled = false;
   }
 };
@@ -954,9 +978,21 @@ window.loadDeckFromCloud = function(id) {
   document.getElementById('deckTitle').value = deck.meta.title || '';
   document.getElementById('defaultTimer').value = deck.settings?.defaultTimer || '60';
 
-  deck.parts.I = deck.I || [];
-  deck.parts.II = deck.II || [];
-  deck.parts.III = deck.III || [];
+  if (deck.compressedParts && window.LZString) {
+    try {
+      const parsed = JSON.parse(window.LZString.decompressFromUTF16(deck.compressedParts));
+      deck.parts.I = parsed.I || [];
+      deck.parts.II = parsed.II || [];
+      deck.parts.III = parsed.III || [];
+    } catch(e) {
+      console.error("Lỗi giải nén:", e);
+      deck.parts.I = []; deck.parts.II = []; deck.parts.III = [];
+    }
+  } else {
+    deck.parts.I = deck.I || [];
+    deck.parts.II = deck.II || [];
+    deck.parts.III = deck.III || [];
+  }
   
   updateCount('I');
   updateCount('II');
