@@ -429,6 +429,21 @@
   .summary-btn:hover{transform:translateY(-3px) scale(1.05);}
   .confetti{position:absolute;width:10px;height:10px;background-color:#f2d74e;opacity:0;}
   @keyframes fall{0%{top:-10%;opacity:1;transform:rotate(0deg);}100%{top:110%;opacity:1;transform:rotate(720deg);}}
+
+  /* Cloud Modal */
+  #cloudModal{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .cloud-card{background:#fff;border-radius:20px;width:100%;max-width:800px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.2);overflow:hidden;}
+  .cloud-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .cloud-header h2{margin:0;font-size:1.4rem;font-weight:800;color:var(--ink);}
+  .cloud-body{padding:20px 24px;overflow-y:auto;flex:1;background:#f8f9fc;}
+  .cloud-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;transition:box-shadow 0.2s;}
+  .cloud-item:hover{box-shadow:0 6px 20px rgba(0,0,0,0.06);border-color:#bcd4f7;}
+  .cloud-item-info h3{margin:0 0 6px;font-size:1.1rem;color:var(--blue1);}
+  .cloud-item-meta{font-size:0.85rem;color:var(--ink-soft);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;}
+  .cloud-item-meta span{background:#eef2f9;padding:4px 10px;border-radius:6px;font-weight:600;}
+  .cloud-item-note{font-size:0.85rem;color:#666;font-style:italic;}
+  .cloud-item-actions{display:flex;gap:8px;flex-direction:column;}
+  .cloud-empty{text-align:center;padding:40px;color:var(--ink-soft);font-size:1.1rem;}
 </style>
 
 <!-- Firebase SDK -->
@@ -436,6 +451,7 @@
   // Import Firebase modules
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
   import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, query, where, orderBy, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyClTIOONdEvnasZZltgKiW70PEF7JekJIA",
@@ -450,6 +466,9 @@
   try {
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
+    window.firebaseDb = db;
+    window.firebaseAuth = auth;
     const provider = new GoogleAuthProvider();
 
     // Export ra global để có thể gọi từ các nút bấm HTML
@@ -538,6 +557,8 @@
     <span style="font-size: 0.85rem; font-weight: 600; color: var(--ink-soft); margin-right: auto; align-self: center;">
       Xin chào, <span id="loggedUserName">Giáo viên</span>
     </span>
+    <button class="btn btn-primary btn-sm" onclick="window.saveDeckToCloud()">☁️ Lưu bài lên Cloud</button>
+    <button class="btn btn-outline btn-sm" onclick="window.openCloudModal()">📂 Mở bài đã lưu</button>
     <button class="btn btn-outline btn-sm" onclick="window.signOutFirebase()">🚪 Đăng xuất</button>
     <a class="btn btn-outline btn-sm" href="https://chuyendoijson.vercel.app/" target="_blank" rel="noopener" title="Công cụ chuyển đổi JSON">🔄 Công cụ chuyển đổi JSON</a>
     <button class="btn btn-red btn-sm" id="btnClearAll">🗑 Xóa toàn bộ dữ liệu đã lưu</button>
@@ -586,6 +607,31 @@
         <div class="field">
           <label>Trường</label>
           <input type="text" id="deckSchool" placeholder="VD: Trường THPT Nguyễn Hữu Cảnh">
+        </div>
+      </div>
+      <div class="global-row" style="margin-top: 15px;">
+        <div class="field">
+          <label>Khối/Lớp</label>
+          <select id="deckGrade" style="min-width:120px;">
+            <option value="12">Lớp 12</option>
+            <option value="11">Lớp 11</option>
+            <option value="10">Lớp 10</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Chương</label>
+          <input type="text" id="deckChapter" placeholder="VD: Chương 1">
+        </div>
+        <div class="field">
+          <label>Đối tượng học sinh</label>
+          <input type="text" id="deckTarget" placeholder="VD: Khá, Giỏi">
+        </div>
+      </div>
+      <div class="global-row" style="margin-top: 15px;">
+        <div class="field" style="flex:1; width: 100%;">
+          <label>Ghi chú thêm</label>
+          <input type="text" id="deckNote" placeholder="VD: Dùng cho buổi phụ đạo chiều thứ 5..." style="width:100%;">
         </div>
       </div>
     </div>
@@ -780,12 +826,179 @@
   </div>
 </div>
 
+<!-- ============= CLOUD MODAL ============= -->
+<div id="cloudModal" hidden>
+  <div class="cloud-card">
+    <div class="cloud-header">
+      <h2>📂 Mở bài giảng đã lưu</h2>
+      <button class="icon-btn" onclick="window.closeCloudModal()">✕</button>
+    </div>
+    <div class="cloud-body" id="cloudBody">
+      <!-- items injected here -->
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 (function(){
 "use strict";
+
+window.saveDeckToCloud = async function() {
+  if (!window.firebaseDb || !window.firebaseAuth.currentUser) {
+    alert("Vui lòng đăng nhập trước!");
+    return;
+  }
+  const btn = event.target;
+  btn.textContent = "⏳ Đang lưu...";
+  btn.disabled = true;
+
+  try {
+    const { addDoc, collection, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js");
+    
+    // Thu thập metadata
+    const meta = {
+      grade: document.getElementById('deckGrade').value,
+      chapter: document.getElementById('deckChapter').value,
+      target: document.getElementById('deckTarget').value,
+      note: document.getElementById('deckNote').value,
+      teacher: document.getElementById('deckTeacher').value,
+      school: document.getElementById('deckSchool').value,
+      title: document.getElementById('deckTitle').value,
+      createdAt: serverTimestamp(),
+      ownerEmail: window.firebaseAuth.currentUser.email
+    };
+
+    // Chuẩn bị dữ liệu deck
+    const deckData = {
+      meta,
+      settings: { defaultTimer: document.getElementById('defaultTimer').value },
+      I: state.I,
+      II: state.II,
+      III: state.III
+    };
+
+    await addDoc(collection(window.firebaseDb, "math_decks"), deckData);
+    alert("✅ Đã lưu bài lên Cloud thành công!");
+  } catch (error) {
+    console.error(error);
+    alert("❌ Lỗi khi lưu: " + error.message);
+  } finally {
+    btn.textContent = "☁️ Lưu bài lên Cloud";
+    btn.disabled = false;
+  }
+};
+
+window.openCloudModal = async function() {
+  if (!window.firebaseDb || !window.firebaseAuth.currentUser) {
+    alert("Vui lòng đăng nhập trước!");
+    return;
+  }
+  document.getElementById('cloudModal').hidden = false;
+  document.getElementById('cloudBody').innerHTML = '<div class="cloud-empty">⏳ Đang tải dữ liệu...</div>';
+
+  try {
+    const { getDocs, query, collection, where } = await import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js");
+    const q = query(
+      collection(window.firebaseDb, "math_decks"),
+      where("meta.ownerEmail", "==", window.firebaseAuth.currentUser.email)
+    );
+    const snap = await getDocs(q);
+    const decks = [];
+    snap.forEach(doc => decks.push({ id: doc.id, ...doc.data() }));
+
+    // Sắp xếp giảm dần theo thời gian (client-side để tránh lỗi composite index)
+    decks.sort((a, b) => {
+      const ta = a.meta.createdAt ? (a.meta.createdAt.toMillis ? a.meta.createdAt.toMillis() : 0) : 0;
+      const tb = b.meta.createdAt ? (b.meta.createdAt.toMillis ? b.meta.createdAt.toMillis() : 0) : 0;
+      return tb - ta;
+    });
+
+    renderCloudDecks(decks);
+  } catch (error) {
+    console.error(error);
+    document.getElementById('cloudBody').innerHTML = '<div class="cloud-empty" style="color:red">❌ Lỗi: ' + error.message + '</div>';
+  }
+};
+
+window.closeCloudModal = function() {
+  document.getElementById('cloudModal').hidden = true;
+};
+
+window.deleteCloudDeck = async function(id) {
+  if(!confirm("Bạn có chắc muốn xóa bài này khỏi Cloud không?")) return;
+  try {
+    const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js");
+    await deleteDoc(doc(window.firebaseDb, "math_decks", id));
+    window.openCloudModal(); // Tải lại danh sách
+  } catch (err) {
+    alert("Lỗi khi xóa: " + err.message);
+  }
+};
+
+window.loadDeckFromCloud = function(id) {
+  const deck = window.cachedCloudDecks.find(d => d.id === id);
+  if(!deck) return;
+  
+  document.getElementById('deckGrade').value = deck.meta.grade || '12';
+  document.getElementById('deckChapter').value = deck.meta.chapter || '';
+  document.getElementById('deckTarget').value = deck.meta.target || '';
+  document.getElementById('deckNote').value = deck.meta.note || '';
+  document.getElementById('deckTeacher').value = deck.meta.teacher || '';
+  document.getElementById('deckSchool').value = deck.meta.school || '';
+  document.getElementById('deckTitle').value = deck.meta.title || '';
+  document.getElementById('defaultTimer').value = deck.settings?.defaultTimer || '60';
+
+  state.I = deck.I || [];
+  state.II = deck.II || [];
+  state.III = deck.III || [];
+  
+  updateCount('I');
+  updateCount('II');
+  updateCount('III');
+  renderPreview('I');
+  renderPreview('II');
+  renderPreview('III');
+
+  window.closeCloudModal();
+  alert("✅ Đã tải bài từ Cloud xuống thành công!");
+};
+
+function renderCloudDecks(decks) {
+  window.cachedCloudDecks = decks;
+  const container = document.getElementById('cloudBody');
+  if(decks.length === 0) {
+    container.innerHTML = '<div class="cloud-empty">Chưa có bài giảng nào được lưu trên Cloud.</div>';
+    return;
+  }
+  container.innerHTML = decks.map(d => {
+    const title = d.meta.title || "Bài giảng không tên";
+    let dateStr = "Vừa xong";
+    if (d.meta.createdAt && d.meta.createdAt.toDate) {
+      dateStr = d.meta.createdAt.toDate().toLocaleString('vi-VN');
+    }
+    return \`
+      <div class="cloud-item">
+        <div class="cloud-item-info">
+          <h3>\${title}</h3>
+          <div class="cloud-item-meta">
+            <span>\${d.meta.grade === 'Khác' ? 'Lớp Khác' : 'Lớp ' + d.meta.grade}</span>
+            \${d.meta.chapter ? \`<span>\${d.meta.chapter}</span>\` : ''}
+            \${d.meta.target ? \`<span>👤 \${d.meta.target}</span>\` : ''}
+            <span>🕒 \${dateStr}</span>
+          </div>
+          \${d.meta.note ? \`<div class="cloud-item-note">\${d.meta.note}</div>\` : ''}
+        </div>
+        <div class="cloud-item-actions">
+          <button class="btn btn-primary btn-sm" onclick="window.loadDeckFromCloud('\${d.id}')">⬇ Tải xuống</button>
+          <button class="btn btn-red btn-sm" onclick="window.deleteCloudDeck('\${d.id}')">🗑 Xóa</button>
+        </div>
+      </div>
+    \`;
+  }).join('');
+}
 
 /* ============================================================
    1. DATA MODEL & PERSISTENCE
