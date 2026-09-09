@@ -1049,6 +1049,7 @@ window.loadDeckFromCloud = function(id) {
     try {
       const parsed = JSON.parse(window.LZString.decompressFromUTF16(deck.compressedParts));
       deck.parts.KT = parsed.KT || [];
+      deck.parts.KT = parsed.KT || [];
       deck.parts.I = parsed.I || [];
       deck.parts.II = parsed.II || [];
       deck.parts.III = parsed.III || [];
@@ -1185,6 +1186,11 @@ function loadDeck(){
       if(parsed && parsed.parts) deck = parsed;
     }
   }catch(e){}
+  if(!deck.parts) deck.parts = {};
+  if(!deck.parts.KT) deck.parts.KT = [];
+  if(!deck.parts.I) deck.parts.I = [];
+  if(!deck.parts.II) deck.parts.II = [];
+  if(!deck.parts.III) deck.parts.III = [];
 }
 
 /* ============================================================
