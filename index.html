@@ -69,6 +69,7 @@
   .field select{border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;font-size:.9rem;}
 
   .part-card{background:#fff;border-radius:20px;padding:20px 22px;margin-bottom:20px;box-shadow:0 4px 20px rgba(20,30,60,.06);border-top:6px solid #ccc;}
+  .part-card.pKT{border-top-color:var(--orange1);}
   .part-card.pI{border-top-color:var(--blue1);}
   .part-card.pII{border-top-color:var(--violet1);}
   .part-card.pIII{border-top-color:var(--teal1);}
@@ -180,6 +181,21 @@
   .q-body{display:flex;gap:22px;align-items:stretch;}
   .q-main{flex:1;min-width:0;}
   .q-image-wrap{flex:0 0 40%;max-width:460px;min-height:220px;}
+  
+  /* ---- slide "Kiến thức trọng tâm" ---- */
+  .kt-slide{max-width:none;width:100%;}
+  .kt-eyebrow{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--orange1),var(--orange2));color:#fff;font-weight:800;padding:8px 18px;border-radius:999px;font-size:.62em;letter-spacing:.5px;margin:0 0 28px;box-shadow:0 3px 10px rgba(242,153,74,.35);}
+  .kt-title{font-size:2.3em;font-weight:800;color:var(--blue1);margin:0 0 20px;line-height:1.22;}
+  .kt-subtitle{font-size:1.5em;font-weight:700;color:var(--orange1);margin:0 0 10px;}
+  .kt-bullets{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:20px;}
+  .kt-bullets li{position:relative;padding-left:38px;font-size:1.3em;line-height:1.6;color:var(--ink);font-weight:600;}
+  .kt-bullets li::before{content:'';position:absolute;left:0;top:.5em;width:15px;height:15px;border-radius:4px;background:linear-gradient(135deg,var(--orange1),var(--orange2));}
+  .kt-collapsed{min-height:62vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+  .kt-collapsed .kt-subtitle{margin:0 0 8px;}
+  .kt-collapsed .kt-title{margin:0 0 30px;}
+  .kt-hint{font-size:.85em;font-weight:700;color:var(--ink-soft);opacity:.7;letter-spacing:.3px;animation:kt-hint-pulse 1.8s ease-in-out infinite;}
+  @keyframes kt-hint-pulse{0%,100%{opacity:.5;}50%{opacity:.95;}}
+
   .q-image{width:100%;height:100%;object-fit:contain;border-radius:14px;margin:0;border:1px solid var(--border);display:block;background:#fff;}
 
   .options{display:grid;gap:10px;}
@@ -243,6 +259,11 @@
   #presentScreen.theme-dark .slide-content,
   #presentScreen.theme-dark .q-stem{color:#eef1f7;}
   #presentScreen.theme-dark .q-image{background:#fff;}
+  #presentScreen.theme-dark .kt-title{color:#6fb3ff;}
+  #presentScreen.theme-dark .kt-bullets li{color:#eef1f7;}
+  #presentScreen.theme-dark .kt-subtitle{color:#f4b968;}
+  #presentScreen.theme-dark .kt-hint{color:#8a96b4;}
+
 
   #presentScreen.theme-dark .opt{background:#161b29;border-color:#2a3348;box-shadow:none;}
   #presentScreen.theme-dark .opt:hover{border-color:#3a4966;}
@@ -648,6 +669,28 @@
       </div>
     </div>
 
+
+    <!-- KIẾN THỨC TRỌNG TÂM (trình chiếu trước Phần I, II, III) -->
+    <div class="part-card pKT" data-part="KT">
+      <div class="part-head">
+        <div class="part-title-wrap">
+          <input type="checkbox" class="part-check" id="checkKT" checked>
+          <span class="part-title">📚 Kiến thức trọng tâm (hiển thị trước các phần câu hỏi)</span>
+        </div>
+        <span class="badge-count" id="countKT">0 slide</span>
+      </div>
+      <div class="part-desc">Cột dữ liệu: <b>Tiêu đề, Tiêu đề nhỏ, Kiến thức</b>. Trong ô "Kiến thức", mỗi dòng (xuống dòng bằng Alt+Enter trong Excel) là một gạch đầu dòng — tối đa 10 dòng mỗi slide để chữ luôn to, trình bày chuẩn như PowerPoint.</div>
+      <div class="part-actions" style="margin-top: 10px;">
+        <button class="btn btn-outline btn-sm" data-action="upload" data-part="KT">📂 Tải thủ công vào Kiến thức trọng tâm</button>
+        <input type="file" class="file-input" data-part="KT" accept=".xlsx,.xls">
+        <button class="btn btn-outline btn-sm" data-action="template" data-part="KT">⬇ Tải file mẫu</button>
+        <button class="btn btn-red btn-sm" data-action="clear" data-part="KT">Xoá dữ liệu phần này</button>
+      </div>
+      <textarea class="paste-area" data-part="KT" placeholder="Hoặc dán dữ liệu sao chép trực tiếp từ Excel (Ctrl+C rồi Ctrl+V) vào đây..."></textarea>
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" data-action="ingestPaste" data-part="KT">✅ Nhập dữ liệu vừa dán</button>
+      <div class="preview-wrap" id="previewKT"></div>
+    </div>
+
     <!-- PHẦN I -->
     <div class="part-card pI" data-part="I">
       <div class="part-head">
@@ -898,7 +941,7 @@ window.saveDeckToCloud = function() {
       ownerEmail: window.firebaseAuth.currentUser.email
     };
 
-    const rawParts = { I: deck.parts.I, II: deck.parts.II, III: deck.parts.III };
+    const rawParts = { KT: deck.parts.KT, I: deck.parts.I, II: deck.parts.II, III: deck.parts.III };
     const compressedParts = window.LZString ? window.LZString.compressToUTF16(JSON.stringify(rawParts)) : null;
 
     const deckData = {
@@ -909,6 +952,7 @@ window.saveDeckToCloud = function() {
     if (compressedParts) {
        deckData.compressedParts = compressedParts;
     } else {
+       deckData.KT = deck.parts.KT;
        deckData.I = deck.parts.I;
        deckData.II = deck.parts.II;
        deckData.III = deck.parts.III;
@@ -1004,6 +1048,7 @@ window.loadDeckFromCloud = function(id) {
   if (deck.compressedParts && window.LZString) {
     try {
       const parsed = JSON.parse(window.LZString.decompressFromUTF16(deck.compressedParts));
+      deck.parts.KT = parsed.KT || [];
       deck.parts.I = parsed.I || [];
       deck.parts.II = parsed.II || [];
       deck.parts.III = parsed.III || [];
@@ -1017,9 +1062,11 @@ window.loadDeckFromCloud = function(id) {
     deck.parts.III = deck.III || [];
   }
   
+  updateCount('KT');
   updateCount('I');
   updateCount('II');
   updateCount('III');
+  renderPreview('KT');
   renderPreview('I');
   renderPreview('II');
   renderPreview('III');
@@ -1068,7 +1115,7 @@ function renderCloudDecks(decks) {
 const STORAGE_KEY = 'mathSlidesDeck_v1';
 const DEFAULT_TEACHER = 'Vũ Tiến Lực';
 const DEFAULT_SCHOOL = 'Trường THPT Nguyễn Hữu Cảnh';
-let deck = { title:'', teacher:DEFAULT_TEACHER, school:DEFAULT_SCHOOL, defaultTimer:60, parts:{ I:[], II:[], III:[] } };
+let deck = { title:'', teacher:DEFAULT_TEACHER, school:DEFAULT_SCHOOL, defaultTimer:60, parts:{ KT:[], I:[], II:[], III:[] } };
 
 /* 50 câu danh ngôn / tục ngữ hay nhất về học tập, hiển thị ngẫu nhiên trên slide mở đầu. */
 const LEARNING_QUOTES = [
@@ -1308,10 +1355,30 @@ function ingestPartIII(rows){
   return list;
 }
 
+
+// "Kiến thức trọng tâm": Tiêu đề, Tiêu đề nhỏ, Kiến thức (mỗi dòng trong ô = 1 gạch đầu dòng,
+// tối đa 10 dòng/slide để chữ luôn to, đúng tinh thần trình bày PowerPoint chuẩn).
+function ingestPartKT(rows){
+  const list=[];
+  for(const r of rows){
+    const kTitle = findKey(r, n=>n.includes('tieude') && !n.includes('nho'));
+    const kSubtitle = findKey(r, n=>n.includes('tieude') && n.includes('nho'));
+    const kContent = findKey(r, n=>n.includes('kienthuc')||n.includes('noidung'));
+    const title = kTitle ? String(r[kTitle]||'').trim() : '';
+    const subtitle = kSubtitle ? String(r[kSubtitle]||'').trim() : '';
+    const contentRaw = kContent ? String(r[kContent]||'') : '';
+    const bullets = contentRaw.split(/\r\n|\r|\n/).map(s=>s.trim()).filter(Boolean).slice(0,10);
+    if(!title && bullets.length===0) continue;
+    list.push({title, subtitle, bullets});
+  }
+  return list;
+}
+
 function ingestRows(rows, partKey){
   let list;
   if(partKey==='I') list = ingestPartI(rows);
   else if(partKey==='II') list = ingestPartII(rows);
+  else if(partKey==='KT') list = ingestPartKT(rows);
   else list = ingestPartIII(rows);
   deck.parts[partKey] = deck.parts[partKey].concat(list);
   saveDeck();
@@ -1559,7 +1626,8 @@ function downloadUnifiedTemplate(){
 /* ---- setup preview UI ---- */
 function updatePreview(partKey){
   const list = deck.parts[partKey];
-  document.getElementById('count'+partKey).textContent = list.length + ' câu';
+  const unit = partKey==='KT' ? ' slide' : ' câu';
+  document.getElementById('count'+partKey).textContent = list.length + unit;
   renderPreview(partKey);
 }
 function validateLatex(text) {
@@ -1589,7 +1657,11 @@ window.openEditModal = function(partKey, index) {
   currentEditPart = partKey;
   currentEditIndex = index;
   const q = deck.parts[partKey][index];
-  document.getElementById('editQuestionStem').value = q.stem || '';
+  if(partKey === 'KT') {
+    document.getElementById('editQuestionStem').value = q.title || '';
+  } else {
+    document.getElementById('editQuestionStem').value = q.stem || '';
+  }
   document.getElementById('editModal').hidden = false;
 };
 
@@ -1600,7 +1672,11 @@ window.closeEditModal = function() {
 window.saveEditQuestion = function() {
   if(currentEditPart && currentEditIndex >= 0) {
     const newStem = document.getElementById('editQuestionStem').value;
-    deck.parts[currentEditPart][currentEditIndex].stem = newStem;
+    if (currentEditPart === 'KT') {
+      deck.parts[currentEditPart][currentEditIndex].title = newStem;
+    } else {
+      deck.parts[currentEditPart][currentEditIndex].stem = newStem;
+    }
     renderPreview(currentEditPart);
   }
   window.closeEditModal();
@@ -1649,24 +1725,31 @@ function renderPreview(partKey){
   let cols;
   if(partKey==='I') cols=['#','Nội dung','Đáp án đúng','Thao tác'];
   else if(partKey==='II') cols=['#','Nội dung','a','b','c','d','Thao tác'];
+  else if(partKey==='KT') cols=['#','Tiêu đề','Tiêu đề nhỏ','Số gạch đầu dòng','Thao tác'];
   else cols=['#','Nội dung','Đáp án','Thao tác'];
   
   let html = '<table class="preview-table"><thead><tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr></thead><tbody>';
   list.forEach((q,i)=>{
-    const isValid = validateLatex(q.stem);
+    const isValid = validateLatex(q.stem || q.title || '');
     const rowClass = isValid ? '' : ' class="invalid-latex" title="Lỗi: Số lượng dấu $ không chẵn"';
-    const stemShort = (q.stem||'').replace(/\s+/g,' ').slice(0,80) + ((q.stem||'').length > 80 ? '...' : '');
     
-    let tds = '<td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td>';
-    
-    if(partKey==='I'){
-      const ansTxt = q.correctIndex>=0 ? ['A','B','C','D'][q.correctIndex] : '?';
-      tds += '<td>'+ansTxt+'</td>';
-    }else if(partKey==='II'){
-      const marks = q.items.map(it=> it.correct===true?'Đ':(it.correct===false?'S':'?'));
-      tds += '<td>'+marks[0]+'</td><td>'+marks[1]+'</td><td>'+marks[2]+'</td><td>'+marks[3]+'</td>';
+    let tds = '';
+    if(partKey==='KT'){
+      const titleShort = (q.title||'').replace(/\s+/g,' ').slice(0,60);
+      const subShort = (q.subtitle||'').replace(/\s+/g,' ').slice(0,40);
+      tds += '<td>'+(i+1)+'</td><td>'+escapeHtml(titleShort)+'</td><td>'+escapeHtml(subShort)+'</td><td>'+(q.bullets?q.bullets.length:0)+'</td>';
     }else{
-      tds += '<td>'+escapeHtml(q.answer||'')+'</td>';
+      const stemShort = (q.stem||'').replace(/\s+/g,' ').slice(0,80) + ((q.stem||'').length > 80 ? '...' : '');
+      tds += '<td>'+(i+1)+'</td><td>'+escapeHtml(stemShort)+'</td>';
+      if(partKey==='I'){
+        const ansTxt = q.correctIndex>=0 ? ['A','B','C','D'][q.correctIndex] : '?';
+        tds += '<td>'+ansTxt+'</td>';
+      }else if(partKey==='II'){
+        const marks = q.items.map(it=> it.correct===true?'Đ':(it.correct===false?'S':'?'));
+        tds += '<td>'+marks[0]+'</td><td>'+marks[1]+'</td><td>'+marks[2]+'</td><td>'+marks[3]+'</td>';
+      }else{
+        tds += '<td>'+escapeHtml(q.answer||'')+'</td>';
+      }
     }
     
     const actions = `<div class="action-btns">
@@ -1681,6 +1764,14 @@ function renderPreview(partKey){
   wrap.innerHTML = html;
 }
 function escapeHtml(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function clearPart(partKey){
+  if(!confirm('Xoá toàn bộ dữ liệu đã nhập cho phần này?')) return;
+  deck.parts[partKey] = [];
+  saveDeck();
+  updatePreview(partKey);
+  updateTotal();
+}
 
 function updateTotal(){
   const n = deck.parts.I.length + deck.parts.II.length + deck.parts.III.length;
@@ -1705,7 +1796,7 @@ function initSetupScreen(){
   document.getElementById('deckSchool').value = deck.school || DEFAULT_SCHOOL;
   deck.teacher = document.getElementById('deckTeacher').value;
   deck.school = document.getElementById('deckSchool').value;
-  ['I','II','III'].forEach(p=>updatePreview(p));
+  ['KT','I','II','III'].forEach(p=>updatePreview(p));
   updateTotal();
 
   document.getElementById('deckTitle').addEventListener('input', e=>{ deck.title = e.target.value; saveDeck(); });
@@ -1764,12 +1855,12 @@ function initSetupScreen(){
 
   document.getElementById('btnClearAll').addEventListener('click', ()=>{
     if(!confirm('Xoá TOÀN BỘ dữ liệu đã lưu của cả 3 phần?')) return;
-    deck = { title:'', teacher:DEFAULT_TEACHER, school:DEFAULT_SCHOOL, defaultTimer:60, parts:{I:[],II:[],III:[]} };
+    deck = { title:'', teacher:DEFAULT_TEACHER, school:DEFAULT_SCHOOL, defaultTimer:60, parts:{KT:[],I:[],II:[],III:[]} };
     saveDeck();
     document.getElementById('deckTitle').value='';
     document.getElementById('deckTeacher').value=DEFAULT_TEACHER;
     document.getElementById('deckSchool').value=DEFAULT_SCHOOL;
-    ['I','II','III'].forEach(p=>updatePreview(p));
+    ['KT','I','II','III'].forEach(p=>updatePreview(p));
     updateTotal();
   });
 
@@ -1809,11 +1900,15 @@ function playSound(key){
    ============================================================ */
 let slides = [];
 let currentSlide = 0;
+let ktExpanded = false;
 let scale = 1;
 let optionsLayout = 'list'; // 'list' (1 cột) | 'grid2' (2 hàng x 2 cột) — áp dụng cho phương án A,B,C,D Phần I
 
 function buildSlides(){
   slides = [];
+  if(document.getElementById('checkKT').checked){
+    deck.parts.KT.forEach((k,i)=>slides.push({type:'KT', local:i+1, data:k}));
+  }
   if(document.getElementById('checkI').checked){
     deck.parts.I.forEach((q,i)=>slides.push({type:'I', local:i+1, data:q}));
   }
@@ -1832,6 +1927,7 @@ function startPresentation(){
     return;
   }
   currentSlide = 0;
+  ktExpanded = false;
   document.getElementById('setupScreen').hidden = true;
   showCoverScreen();
 }
@@ -1895,6 +1991,7 @@ function exitPresentation(){
    6. SLIDE RENDERING
    ============================================================ */
 const PART_LABEL = {
+  KT: 'KIẾN THỨC TRỌNG TÂM',
   I: 'PHẦN I (TRẮC NGHIỆM)',
   II: 'PHẦN II (ĐÚNG-SAI)',
   III: 'PHẦN III (TRẢ LỜI NGẮN)'
@@ -1908,8 +2005,42 @@ function renderSlide(){
 
   const content = document.getElementById('slideContent');
   let html = '';
+
+  if(slide.type==='KT'){
+    if(!ktExpanded){
+      html += '<div class="kt-slide kt-collapsed">';
+      if(slide.data.subtitle){
+        html += '<div class="kt-subtitle">'+renderMixedText(slide.data.subtitle)+'</div>';
+      }
+      html += '<h2 class="kt-title">'+renderMixedText(slide.data.title)+'</h2>';
+      html += '<div class="kt-hint">👉 Bấm để xem Kiến thức trọng tâm</div>';
+      html += '</div>';
+    }else{
+      html += '<div class="kt-slide">';
+      if(slide.data.subtitle){
+        html += '<div class="kt-subtitle">'+renderMixedText(slide.data.subtitle)+'</div>';
+      }
+      html += '<h2 class="kt-title">'+renderMixedText(slide.data.title)+'</h2>';
+      html += '<div class="kt-eyebrow">📚 KIẾN THỨC TRỌNG TÂM</div>';
+      if(slide.data.bullets && slide.data.bullets.length){
+        html += '<ul class="kt-bullets">';
+        slide.data.bullets.forEach(b=>{ html += '<li>'+renderMixedText(b)+'</li>'; });
+        html += '</ul>';
+      }
+      html += '</div>';
+    }
+    content.innerHTML = html;
+    renderMathIn(content);
+    clearCanvas();
+    updateFooter();
+    updateBottombarForType(slide.type);
+    closeSolution();
+    return;
+  }
+
   html += '<div class="q-head"><span class="q-badge">Câu '+slide.local+':</span>'+
           '<div class="q-stem">'+renderMixedText(slide.data.stem)+'</div></div>';
+
 
   let mainHtml = '';
   if(slide.type==='I'){
@@ -1970,7 +2101,17 @@ function renderSlide(){
   updateFooter();
   updateAnswerBtn();
   updateSolutionBtnState();
+  updateBottombarForType(slide.type);
   closeSolution();
+}
+
+
+// Slide "Kiến thức trọng tâm" không phải câu hỏi nên ẩn 2 nút hiện đáp án / xem lời giải
+// (vẫn giữ chỗ bằng visibility để thanh điều hướng ở giữa không bị xô lệch).
+function updateBottombarForType(type){
+  const isKT = (type==='KT');
+  document.getElementById('btnShowAnswer').style.visibility = isKT ? 'hidden' : '';
+  document.getElementById('btnShowSolution').style.visibility = isKT ? 'hidden' : '';
 }
 
 function dsButtonHtml(it, val, label){
@@ -2055,9 +2196,18 @@ function toggleAnswer(){
   if(slide.data._revealed) playSound('showAnswer');
 }
 
-function goPrev(){ if(currentSlide>0){ currentSlide--; renderSlide(); playSound('questionOpen'); } }
-function goNext(){ if(currentSlide<slides.length-1){ currentSlide++; renderSlide(); playSound('questionOpen'); } }
-function goTo(i){ if(i>=0 && i<slides.length && i!==currentSlide){ currentSlide=i; renderSlide(); closeJumpModal(); playSound('questionOpen'); } else { closeJumpModal(); } }
+function goPrev(){ if(currentSlide>0){ currentSlide--; ktExpanded=false; renderSlide(); playSound('questionOpen'); } }
+function goNext(){
+  const cur = slides[currentSlide];
+  if(cur && cur.type==='KT' && !ktExpanded){
+    ktExpanded = true;
+    renderSlide();
+    playSound('showAnswer');
+    return;
+  }
+  if(currentSlide<slides.length-1){ currentSlide++; ktExpanded=false; renderSlide(); playSound('questionOpen'); }
+}
+function goTo(i){ if(i>=0 && i<slides.length && i!==currentSlide){ currentSlide=i; ktExpanded=false; renderSlide(); closeJumpModal(); playSound('questionOpen'); } else { closeJumpModal(); } }
 
 /* ============================================================
    7. SOLUTION PANEL
@@ -2124,7 +2274,7 @@ function initSolutionDrag(){
 function openJumpModal(){
   const body = document.getElementById('jumpBody');
   let html = '';
-  ['I','II','III'].forEach(type=>{
+  ['KT','I','II','III'].forEach(type=>{
     const idxs = [];
     slides.forEach((s,i)=>{ if(s.type===type) idxs.push(i); });
     if(idxs.length===0) return;
